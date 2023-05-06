@@ -1,5 +1,5 @@
 version: '3.6'
 services:
         engmaster_bot:
-                image: engmaster-bot:latest
+                build: .
                 restart: always
