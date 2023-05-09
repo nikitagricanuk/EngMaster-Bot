@@ -2,8 +2,9 @@ FROM python
 
 WORKDIR /app
 
-COPY . .
+COPY ./requirements.txt /app/requirements.txt
+RUN pip install -r requirements.txt
 
-RUN pip3 install -r requirements.txt
+COPY . .
 
 ENTRYPOINT ["python3", "bot.py"]
