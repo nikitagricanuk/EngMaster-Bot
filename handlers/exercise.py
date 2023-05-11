@@ -11,7 +11,7 @@ from aiogram import F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 #from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 
-from keyboards.kb import create_kb, start_kb_list
+from keyboards.kb import create_kb, start_kb_list, create_exercise_kb
 
 from words import words
 from random import randint as rint
@@ -27,6 +27,7 @@ async def send_exercise(callback: CallbackQuery, state: FSMContext):
 
 class Exercisig(StatesGroup):
     lobby = State()
+    choose_level = State()
     exercise = State()
 
 
@@ -53,19 +54,34 @@ async def about_bot(message: Message):
 С помощью этого бота вы сможете улучшить свой словарный запас английского языка.
 '''
     )
-
-
 @router.message(Exercisig.lobby, Text(text='Начать!'))
 async def start_session(message: Message, state: FSMContext):
+    await state.set_state(Exercisig.choose_level)
+    ikb = InlineKeyboardBuilder().row(
+        InlineKeyboardButton(text='A1', callback_data='A1'),
+        InlineKeyboardButton(text='A2', callback_data='A2')).row(
+        InlineKeyboardButton(text='B1', callback_data='B1'),
+        InlineKeyboardButton(text='B2', callback_data='B2')).row(
+        InlineKeyboardButton(text='C1', callback_data='C1'),
+        InlineKeyboardButton(text='C2', callback_data='C2'))
+    await message.answer('Для начала, за какой уровень английского слова ты хотел бы выучить?', reply_markup=ikb.as_markup())
+
+@router.callback_query(Exercisig.choose_level, text='A1')
+async def start_session(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Exercisig.exercise)
     await state.update_data(words_num=0, rights=0)
     word = words[rint(0, 200)]
     await state.update_data(word=word)
-    ikb = InlineKeyboardBuilder().row(InlineKeyboardButton(text=f'{word[1][0]}', callback_data=f'{word[1][1]}'), InlineKeyboardButton(text=f'{word[2][0]}', callback_data=f'{word[2][1]}')).row(InlineKeyboardButton(
-        text=f'{word[3][0]}', callback_data=f'{word[3][1]}'), InlineKeyboardButton(text=f'{word[4][0]}', callback_data=f'{word[4][1]}')).row(InlineKeyboardButton(text='Остановить сессию', callback_data='stop'))
-    await message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
-    await message.answer(f'<b>{word[0]} — ...</b>', reply_markup=ikb.as_markup())
+    ikb = create_exercise_kb(word)
+    await callback.message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
+    await callback.message.answer(f'<b>{word[0]} — ...</b>', reply_markup=ikb.as_markup())
 
+@router.callback_query(Exercisig.choose_level, text='A2')
+@router.callback_query(Exercisig.choose_level, text='B1')
+@router.callback_query(Exercisig.choose_level, text='B2')
+@router.callback_query(Exercisig.choose_level, text='C1')
+@router.callback_query(Exercisig.choose_level, text='C2')
+    
 
 @router.callback_query(Exercisig.exercise, text='stop')
 async def stop_session(callback: CallbackQuery, state: FSMContext):
