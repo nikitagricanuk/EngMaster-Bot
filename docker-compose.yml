@@ -3,3 +3,9 @@ services:
         engmaster_bot:
                 build: .
                 restart: always
+
+        postgresql:
+                image: postgres
+                restart: always
+                environment:
+                        - POSTGRES_PASSWORD=cabeiMoh4Pah
