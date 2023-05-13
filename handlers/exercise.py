@@ -11,7 +11,7 @@ from aiogram import F
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 #from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 
-from keyboards.kb import create_kb, start_kb_list, create_exercise_kb
+from keyboards.kb import create_kb, start_kb_list, create_exercise_kb, create_level_kb
 
 from words import words
 from random import randint as rint
@@ -49,38 +49,53 @@ async def start_cmd(message: Message, state: FSMContext):
 async def about_bot(message: Message):
     await message.answer(
         '''
-❓ Что такое <b>ENGMASTER BOT?</b>
+            ❓ Что такое <b>ENGMASTER BOT?</b>
 
-С помощью этого бота вы сможете улучшить свой словарный запас английского языка.
-'''
+            С помощью этого бота вы сможете улучшить свой словарный запас английского языка.
+        '''
     )
+
+    
 @router.message(Exercisig.lobby, Text(text='Начать!'))
 async def start_session(message: Message, state: FSMContext):
     await state.set_state(Exercisig.choose_level)
-    ikb = InlineKeyboardBuilder().row(
-        InlineKeyboardButton(text='A1', callback_data='A1'),
-        InlineKeyboardButton(text='A2', callback_data='A2')).row(
-        InlineKeyboardButton(text='B1', callback_data='B1'),
-        InlineKeyboardButton(text='B2', callback_data='B2')).row(
-        InlineKeyboardButton(text='C1', callback_data='C1'),
-        InlineKeyboardButton(text='C2', callback_data='C2'))
-    await message.answer('Для начала, за какой уровень английского слова ты хотел бы выучить?', reply_markup=ikb.as_markup())
+    await message.answer('Для начала, за какой уровень английского слова ты хотел бы выучить?', reply_markup=create_level_kb().as_markup())
+
 
 @router.callback_query(Exercisig.choose_level, text='A1')
-async def start_session(callback: CallbackQuery, state: FSMContext):
-    await state.set_state(Exercisig.exercise)
-    await state.update_data(words_num=0, rights=0)
+async def start_exercise_A1(callback: CallbackQuery, state: FSMContext):
     word = words[rint(0, 200)]
-    await state.update_data(word=word)
-    ikb = create_exercise_kb(word)
-    await callback.message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
-    await callback.message.answer(f'<b>{word[0]} — ...</b>', reply_markup=ikb.as_markup())
+    await new_exercise(callback, state, word)
+
 
 @router.callback_query(Exercisig.choose_level, text='A2')
+async def start_exercise_A2(callback: CallbackQuery, state: FSMContext):
+    word = words[rint(0, 200)]
+    await new_exercise(callback, state, word)
+
+
 @router.callback_query(Exercisig.choose_level, text='B1')
+async def start_exercise_B1(callback: CallbackQuery, state: FSMContext):
+    word = words[rint(0, 200)]
+    await new_exercise(callback, state, word)
+
+
 @router.callback_query(Exercisig.choose_level, text='B2')
+async def start_exercise_B2(callback: CallbackQuery, state: FSMContext):
+    word = words[rint(0, 200)]
+    await new_exercise(callback, state, word)
+
+
 @router.callback_query(Exercisig.choose_level, text='C1')
+async def start_exercise_C1(callback: CallbackQuery, state: FSMContext):
+    word = words[rint(0, 200)]
+    await new_exercise(callback, state, word)
+
+
 @router.callback_query(Exercisig.choose_level, text='C2')
+async def start_exercise_C2(callback: CallbackQuery, state: FSMContext):
+    word = words[rint(0, 200)]
+    await new_exercise(callback, state, word)
     
 
 @router.callback_query(Exercisig.exercise, text='stop')
@@ -93,20 +108,22 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
     if words_num == 0:
         await callback.message.answer(
             '''
-<b>Результаты</b>
+                <b>Результаты</b>
 
-Всего слов: 0
-''', reply_markup=create_kb(start_kb_list))
+                Всего слов: 0
+            ''',
+            reply_markup=create_kb(start_kb_list))
+        
     else:
         await callback.message.answer(
             f'''
-<b>Результаты</b>
+                <b>Результаты</b>
 
-Всего слов: {words_num}
-Всего правильных ответов: {rights}
-Всего неправильных ответов: {words_num-rights}
+                Всего слов: {words_num}
+                Всего правильных ответов: {rights}
+                Всего неправильных ответов: {words_num-rights}
 
-<b>{round((rights*100)/words_num, 1)}% ваших ответов являются правильными!</b>
+                <b>{round((rights*100)/words_num, 1)}% ваших ответов являются правильными!</b>
             ''',
             reply_markup=create_kb(start_kb_list))
 
@@ -116,6 +133,7 @@ async def right_answer(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     words_num = data.get('words_num')
     rights = data.get('rights')
+
     await state.update_data(words_num=words_num+1, rights=rights+1)
     await callback.answer('✅ Верно!')
     await send_exercise(callback, state)
@@ -127,7 +145,18 @@ async def false_answer(callback: CallbackQuery, state: FSMContext):
     words_num = data.get('words_num')
     word = data.get('word')
     await state.update_data(words_num=words_num+1)
+
     await callback.answer('❌ Неверно!')
     right_trans = [right[0] for right in word if right[1] == 'true']
     await callback.message.answer(f'<b>{word[0]} — {right_trans[0]} ❗</b>')
     await send_exercise(callback, state)
+
+async def new_exercise(callback, state, word):
+    await state.set_state(Exercisig.exercise)
+
+    await state.update_data(words_num=0, rights=0)
+    await state.update_data(word=word)
+    word = words[rint(0, 200)]
+
+    await callback.message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
+    await callback.message.answer(f'<b>{word[0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
