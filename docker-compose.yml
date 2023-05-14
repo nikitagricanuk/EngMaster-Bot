@@ -4,7 +4,7 @@ services:
                 build: .
                 restart: always
 
-        postgresql:
+        postgres:
                 image: postgres
                 restart: always
                 environment:
