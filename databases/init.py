@@ -2,6 +2,30 @@ import psycopg2
 from psycopg2 import Error
 from config import DATABASE_NAME, DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT
 
+create_table("A1", "nouns")
+create_table("A1", "verbs")
+create_table("A1", "adjectives")
+
+create_table("A2", "nouns")
+create_table("A2", "verbs")
+create_table("A2", "adjectives")
+
+create_table("B1", "nouns")
+create_table("B1", "verbs")
+create_table("B1", "adjectives")
+
+create_table("B2", "nouns")
+create_table("B2", "verbs")
+create_table("B2", "adjectives")
+
+create_table("C1", "nouns")
+create_table("C1", "verbs")
+create_table("C1", "adjectives")
+
+create_table("C2", "nouns")
+create_table("C2", "verbs")
+create_table("C2", "adjectives")
+
 def create_table(level, kind):
     try:
         db_connection = connect_db()
