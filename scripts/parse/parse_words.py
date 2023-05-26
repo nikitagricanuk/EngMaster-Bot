@@ -44,15 +44,18 @@ for levels in ["A1", "A2", "B1", "B2", "C1"]:
 
         for row in table.find_all('tr'):
             columns = row.find_all('td')
+            
             print(f'{columns[0].text} {columns[1].text} {columns[2].text}')
 
             db_connection = connect_db()
             cursor = db_connection.cursor()
-            
-            cursor.execute(f'''
-                            INSERT INTO {name} (word, transcription, translation)
-                            VALUES ('{columns[0].text}', '{columns[1].text}', '{columns[2].text}');
-                            ''')
+            try:
+                cursor.execute(f'''
+                                INSERT INTO {name} (word, transcription, translation)
+                                VALUES ('{columns[0].text}', '{columns[1].text}', '{columns[2].text}');
+                                ''')
+            except psycopg2.errors.UniqueViolation as e:
+                print("Failed to insert: Word already exist")
             
             db_connection.commit()
             db_connection.close()
