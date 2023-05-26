@@ -3,18 +3,23 @@ from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove, InlineKey
 
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.fsm.context import FSMContext
-#from aiogram.dispatcher import FSMContext
+# from aiogram.dispatcher import FSMContext
 
 from aiogram.dispatcher.filters import Command, Text
 from aiogram import F
 
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-#from aiogram.types.inline_keyboard import InlineKeyboardMarkup
+# from aiogram.types.inline_keyboard import InlineKeyboardMarkup
 
 from keyboards.kb import create_kb, start_kb_list, create_exercise_kb, create_level_kb
 
 from words import words
+import random
 from random import randint as rint
+
+# , DATABASE_NAME, DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT
+from config import WORD_TYPES
+from databases.db import connect_db
 
 
 async def send_exercise(callback: CallbackQuery, state: FSMContext):
@@ -55,7 +60,7 @@ async def about_bot(message: Message):
         '''
     )
 
-    
+
 @router.message(Exercisig.lobby, Text(text='Начать!'))
 async def start_session(message: Message, state: FSMContext):
     await state.set_state(Exercisig.choose_level)
@@ -64,39 +69,33 @@ async def start_session(message: Message, state: FSMContext):
 
 @router.callback_query(Exercisig.choose_level, text='A1')
 async def start_exercise_A1(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
+    await callback.message.delete()
+    await new_exercise(callback, state, 'A1')
 
 
 @router.callback_query(Exercisig.choose_level, text='A2')
 async def start_exercise_A2(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
+    await callback.message.delete()
+    await new_exercise(callback, state, 'A2')
 
 
 @router.callback_query(Exercisig.choose_level, text='B1')
 async def start_exercise_B1(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
+    await callback.message.delete()
+    await new_exercise(callback, state, 'B1')
 
 
 @router.callback_query(Exercisig.choose_level, text='B2')
 async def start_exercise_B2(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
+    await callback.message.delete()
+    await new_exercise(callback, state, 'B2')
 
 
 @router.callback_query(Exercisig.choose_level, text='C1')
 async def start_exercise_C1(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
+    await callback.message.delete()
+    await new_exercise(callback, state, 'C1')
 
-
-@router.callback_query(Exercisig.choose_level, text='C2')
-async def start_exercise_C2(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
-    await new_exercise(callback, state, word)
-    
 
 @router.callback_query(Exercisig.exercise, text='stop')
 async def stop_session(callback: CallbackQuery, state: FSMContext):
@@ -113,7 +112,7 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
                 Всего слов: 0
             ''',
             reply_markup=create_kb(start_kb_list))
-        
+
     else:
         await callback.message.answer(
             f'''
@@ -151,12 +150,34 @@ async def false_answer(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer(f'<b>{word[0]} — {right_trans[0]} ❗</b>')
     await send_exercise(callback, state)
 
-async def new_exercise(callback, state, word):
+
+async def new_exercise(callback, state, level):
     await state.set_state(Exercisig.exercise)
+
+    kind = random.choice(WORD_TYPES)
+    word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
 
     await state.update_data(words_num=0, rights=0)
     await state.update_data(word=word)
-    word = words[rint(0, 200)]
 
     await callback.message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
     await callback.message.answer(f'<b>{word[0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
+
+
+def new_word(level, kind, id):
+    db_connection = connect_db()
+    cursor = db_connection.cursor()
+
+    cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {id}')
+    data = cursor.fetchall()
+
+    print(data)
+
+
+def get_number_of_words(level, kind):
+    db_connection = connect_db()
+    cursor = db_connection.cursor()
+
+    cursor.execute(f'SELECT * FROM words_{level}_{kind}')
+
+    return cursor.rowcount
