@@ -1,5 +1,6 @@
 import psycopg2
 from psycopg2 import Error
+from config import DATABASE_NAME, DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT
 
 def insert_word(word, transcription, translation, definition, table):
     try:
@@ -40,6 +41,6 @@ def create_table(level, kind):
 
 
 def connect_db():
-    return psycopg2.connect(database='words', username='engmaster', 
-                            password='cabeiMoh4Pah', host='postgresql', 
-                            port='5432')
+    return psycopg2.connect(database=DATABASE_NAME, user=DATABASE_USERNAME, 
+                            password=DATABASE_PASSWORD, host=DATABASE_HOST, 
+                            port=DATABASE_PORT)
