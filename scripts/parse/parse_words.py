@@ -33,7 +33,7 @@ def connect_db():
                             password=DATABASE_PASSWORD, host=DATABASE_HOST, 
                             port=DATABASE_PORT)
 
-for levels in ["A1", "A2", "B1", "B2", "C1", "C2"]:
+for levels in ["A1", "A2", "B1", "B2", "C1"]:
     for kind in ["adjectives", "nouns", "verbs", "adverbs"]:
         name = f"words_{levels}_{kind}"
 
