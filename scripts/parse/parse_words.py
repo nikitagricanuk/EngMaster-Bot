@@ -62,4 +62,4 @@ for levels in ["A1", "A2", "B1", "B2", "C1"]:
 
 end_tm = time.time()
 
-print("done (", end_tm - start_tm, ")")
+print("done (", end_tm - start_tm, "s)")
