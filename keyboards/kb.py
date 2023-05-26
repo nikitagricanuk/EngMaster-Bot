@@ -29,5 +29,4 @@ def create_level_kb():
         InlineKeyboardButton(text='A2', callback_data='A2')).row(
         InlineKeyboardButton(text='B1', callback_data='B1'),
         InlineKeyboardButton(text='B2', callback_data='B2')).row(
-        InlineKeyboardButton(text='C1', callback_data='C1'),
-        InlineKeyboardButton(text='C2', callback_data='C2'))
+        InlineKeyboardButton(text='C1', callback_data='C1'))
