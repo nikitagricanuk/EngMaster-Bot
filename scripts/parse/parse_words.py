@@ -3,7 +3,9 @@
 from bs4 import BeautifulSoup
 import psycopg2
 from psycopg2 import Error
-import wikipedia
+import time
+
+start_tm = time.time()
 
 DATABASE_NAME = "engmaster"
 DATABASE_USERNAME = "engmaster"
@@ -27,16 +29,34 @@ def insert_word(word, transcription, translation, definition, table):
     db_connection.close()
 
 def connect_db():
-    return psycopg2.connect(database=DATABASE_NAME, username=DATABASE_USERNAME, 
+    return psycopg2.connect(database=DATABASE_NAME, user=DATABASE_USERNAME, 
                             password=DATABASE_PASSWORD, host=DATABASE_HOST, 
                             port=DATABASE_PORT)
 
+for levels in ["A1", "A2", "B1", "B2", "C1", "C2"]:
+    for kind in ["adjectives", "nouns", "verbs", "adverbs"]:
+        name = f"words_{levels}_{kind}"
 
-with open("content/A1_words.html") as fp:
-    soup = BeautifulSoup(fp, 'html.parser')
+        with open(f"content/{name}.html") as fp:
+            soup = BeautifulSoup(fp, 'html.parser')
 
-table = soup.find('table')
+        table = soup.find('table')
 
-for row in table.find_all('tr'):
-    columns = row.find_all('td')
-    print(f'{columns[0].text} {columns[1].text} {columns[2].text}')
+        for row in table.find_all('tr'):
+            columns = row.find_all('td')
+            print(f'{columns[0].text} {columns[1].text} {columns[2].text}')
+
+            db_connection = connect_db()
+            cursor = db_connection.cursor()
+            
+            cursor.execute(f'''
+                            INSERT INTO {name} (word, transcription, translation)
+                            VALUES ('{columns[0].text}', '{columns[1].text}', '{columns[2].text}');
+                            ''')
+            
+            db_connection.commit()
+            db_connection.close()
+
+end_tm = time.time()
+
+print("done (", end_tm - start_tm, ")")
