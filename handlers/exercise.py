@@ -192,32 +192,30 @@ def new_word(level, kind, id):
     # Genius hack, I know :)
     word_order = rint(0, 3)
     if word_order == 0:
-        word1 = 'true'
-        word2 = 'false'
-        word3 = 'false'
-        word4 = 'false'
+        word1 = [(str(data[0][3]), 'true')]
+        word2 = [(str(incorrect_words[0]), 'false')]
+        word3 = [(str(incorrect_words[1]), 'false')]
+        word4 = [(str(incorrect_words[2]), 'false')]
     elif word_order == 1:
-        word1 = 'false'
-        word2 = 'true'
-        word3 = 'false'
-        word4 = 'false'
+        word1 = [(str(incorrect_words[0]), 'false')]
+        word2 = [(str(data[0][3]), 'true')]
+        word3 = [(str(incorrect_words[1]), 'false')]
+        word4 = [(str(incorrect_words[2]), 'false')]
     elif word_order == 2:
-        word1 = 'false'
-        word2 = 'false'
-        word3 = 'true'
-        word4 = 'false'
+        word1 = [(str(incorrect_words[0]), 'false')]
+        word2 = [(str(incorrect_words[1]), 'false')]
+        word3 = [(str(data[0][3]), 'true')]
+        word4 = [(str(incorrect_words[2]), 'false')]
     else:
-        word1 = 'false'
-        word2 = 'false'
-        word3 = 'false'
-        word4 = 'true'
+        word1 = [(str(incorrect_words[0]), 'false')]
+        word2 = [(str(incorrect_words[1]), 'false')]
+        word3 = [(str(incorrect_words[2]), 'false')]
+        word4 = [(str(data[0][3]), 'true')]
 
 #          [('Word', 'Transcription'), ('Translation1', 'true'),
 #           ('Translation2', 'false'), ('Translation3', 'false'), 
 #           ('Translation4', 'false')]
-    return [(str(data[0][1]), str(data[0][2])), (str(data[0][3]), word1),
-            (str(incorrect_words[0]), word2), (str(incorrect_words[1]), word3),
-            (str(incorrect_words[2]), word4)] 
+    return [(str(data[0][1]), str(data[0][2])), word1[0], word2[0], word3[0], word4[0]] 
 
 
 def get_number_of_words(level, kind):
