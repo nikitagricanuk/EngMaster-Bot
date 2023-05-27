@@ -111,6 +111,7 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     words_num = data.get('words_num')
     rights = data.get('rights')
+    level = data.get('level')
     await callback.message.edit_text('Сессия завершена!')
     if words_num == 0:
         await callback.message.answer(
@@ -126,6 +127,7 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
             f'''
 <b>Результаты</b>
 
+Уровень: {level.upper()}
 Всего слов: {words_num}
 Всего правильных ответов: {rights}
 Всего неправильных ответов: {words_num-rights}
