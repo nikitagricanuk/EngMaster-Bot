@@ -182,18 +182,7 @@ def new_word(level, kind, id):
 
     logging.error('In new_word() function 2!')
 
-    incorrect_words = []
-    for i in range(3):
-        incorrect_word_id = rint(0, get_number_of_words(level, kind))
-        while incorrect_word_id == id:
-            tmp = rint(0, get_number_of_words(level, kind))
-            print(tmp)
-            incorrect_word_id = tmp
-        
-        cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {incorrect_word_id}')
-        incorrent_word_translate = cursor.fetchall()
-        print(f'In table words_{level}_{kind} data is', incorrent_word_translate)
-        incorrect_words.append(incorrent_word_translate[0][3])
+    incorrect_words = get_incorrect_words(level, kind)
 
     # In this section we determine the word order.
     # Here we're randomly choose in which part of return value
@@ -236,3 +225,26 @@ def get_number_of_words(level, kind):
     cursor.execute(f'SELECT * FROM words_{level}_{kind}')
     logging.error('In get_number_of_words() function 2!')
     return cursor.rowcount
+
+
+def get_incorrect_words(level, kind):
+    db_connection = connect_db()
+    cursor = db_connection.cursor()
+
+    incorrect_words = []
+    for i in range(3):
+        incorrect_word_id = rint(0, get_number_of_words(level, kind))
+        while incorrect_word_id == id:
+            tmp = rint(0, get_number_of_words(level, kind))
+            print(tmp)
+            incorrect_word_id = tmp
+        
+        cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {incorrect_word_id}')
+        incorrent_word_translate = cursor.fetchall()
+        print(f'In table words_{level}_{kind} data is', incorrent_word_translate)
+        try:
+            incorrect_words.append(incorrent_word_translate[0][3])
+        except IndexError:
+            incorrect_words = get_incorrect_words(level, kind)
+        
+    return incorrect_words
