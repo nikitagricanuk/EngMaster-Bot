@@ -17,16 +17,17 @@ from words import words
 import random
 from random import randint as rint
 
-import logging
-
 # , DATABASE_NAME, DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT
 from config import WORD_TYPES
 from databases.db import connect_db
 
 
 async def send_exercise(callback: CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+    level = data.get('level')
+
     kind = random.choice(WORD_TYPES)
-    word = new_word(global_level, kind, rint(0, get_number_of_words(global_level, kind)))
+    word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
 
     await state.update_data(word=word)
     await callback.message.edit_text(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
@@ -56,9 +57,9 @@ async def start_cmd(message: Message, state: FSMContext):
 async def about_bot(message: Message):
     await message.answer(
         '''
-            ❓ Что такое <b>ENGMASTER BOT?</b>
+❓ Что такое <b>ENGMASTER BOT?</b>
 
-            С помощью этого бота вы сможете улучшить свой словарный запас английского языка.
+С помощью этого бота вы сможете улучшить свой словарный запас английского языка.
         '''
     )
 
@@ -72,49 +73,41 @@ async def start_session(message: Message, state: FSMContext):
 @router.callback_query(Exercisig.choose_level, text='A1')
 async def start_exercise_A1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    global global_level
-    global_level = 'a1'
-    await new_exercise(callback, state, 'a1')
+    await state.update_data(level='a1')
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='A2')
 async def start_exercise_A2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    global global_level
-    global_level = 'a2'
-    await new_exercise(callback, state, 'A2')
+    await state.update_data(level='a2')
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='B1')
 async def start_exercise_B1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    global global_level
-    global_level = 'b1'
-    await new_exercise(callback, state, 'B1')
+    await state.update_data(level='b1')
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='B2')
 async def start_exercise_B2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    global global_level
-    global_level = 'b2'
-    await new_exercise(callback, state, 'B2')
+    await state.update_data(level='b2')
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='C1')
 async def start_exercise_C1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    global global_level
-    global_level = 'c1'
-    await new_exercise(callback, state, 'C1')
+    await state.update_data(level='c1')
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.exercise, text='stop')
 async def stop_session(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Exercisig.lobby)
-
-    global_level = None
-
     data = await state.get_data()
     words_num = data.get('words_num')
     rights = data.get('rights')
@@ -122,9 +115,9 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
     if words_num == 0:
         await callback.message.answer(
             '''
-                <b>Результаты</b>
+<b>Результаты</b>
 
-                Всего слов: 0
+Всего слов: 0
             ''',
             reply_markup=create_kb(start_kb_list))
 
@@ -156,6 +149,7 @@ async def right_answer(callback: CallbackQuery, state: FSMContext):
 @router.callback_query(Exercisig.exercise, text='false')
 async def false_answer(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
+    print(data)
     words_num = data.get('words_num')
     word = data.get('word')
     await state.update_data(words_num=words_num+1)
@@ -166,10 +160,11 @@ async def false_answer(callback: CallbackQuery, state: FSMContext):
     await send_exercise(callback, state)
 
 
-async def new_exercise(callback, state, level):
+async def new_exercise(callback, state):
     await state.set_state(Exercisig.exercise)
 
-    logging.error('In new_exercise() function 1!')
+    data = await state.get_data()
+    level = data.get('level')
 
     kind = random.choice(WORD_TYPES)
     word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
@@ -177,7 +172,6 @@ async def new_exercise(callback, state, level):
     await state.update_data(words_num=0, rights=0)
     await state.update_data(word=word)
 
-    logging.error('In new_exercise() function 2!')
 
     await callback.message.answer('Сессия началась! Вы можете в любой момент закончить её нажатием кнопки на клавиатуре и узнать свои результаты', reply_markup=ReplyKeyboardRemove())
     await callback.message.answer(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
@@ -187,12 +181,8 @@ def new_word(level, kind, id):
     db_connection = connect_db()
     cursor = db_connection.cursor()
 
-    logging.error('In new_word() function 1!')
-
     cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {id}')
     data = cursor.fetchall()
-
-    logging.error('In new_word() function 2!')
 
     incorrect_words = get_incorrect_words(level, kind)
 
@@ -233,9 +223,7 @@ def new_word(level, kind, id):
 def get_number_of_words(level, kind):
     db_connection = connect_db()
     cursor = db_connection.cursor()
-    logging.error('In get_number_of_words() function 1!')
     cursor.execute(f'SELECT * FROM words_{level}_{kind}')
-    logging.error('In get_number_of_words() function 2!')
     return cursor.rowcount
 
 
@@ -247,13 +235,11 @@ def get_incorrect_words(level, kind):
     for i in range(3):
         incorrect_word_id = rint(0, get_number_of_words(level, kind))
         while incorrect_word_id == id:
-            tmp = rint(0, get_number_of_words(level, kind))
-            print(tmp)
-            incorrect_word_id = tmp
+            incorrect_word_id = rint(0, get_number_of_words(level, kind))
         
         cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {incorrect_word_id}')
         incorrent_word_translate = cursor.fetchall()
-        print(f'In table words_{level}_{kind} data is', incorrent_word_translate)
+
         try:
             incorrect_words.append(incorrent_word_translate[0][3])
         except IndexError:
