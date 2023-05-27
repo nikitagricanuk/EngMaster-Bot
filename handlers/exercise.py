@@ -25,11 +25,11 @@ from databases.db import connect_db
 
 
 async def send_exercise(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
+    kind = random.choice(WORD_TYPES)
+    word = new_word(global_level, kind, rint(0, get_number_of_words(global_level, kind)))
+
     await state.update_data(word=word)
-    ikb = InlineKeyboardBuilder().row(InlineKeyboardButton(text=f'{word[1][0]}', callback_data=f'{word[1][1]}'), InlineKeyboardButton(text=f'{word[2][0]}', callback_data=f'{word[2][1]}')).row(InlineKeyboardButton(
-        text=f'{word[3][0]}', callback_data=f'{word[3][1]}'), InlineKeyboardButton(text=f'{word[4][0]}', callback_data=f'{word[4][1]}')).row(InlineKeyboardButton(text='Остановить сессию', callback_data='stop'))
-    await callback.message.edit_text(f'<b>{word[0]} — ...</b>', reply_markup=ikb.as_markup())
+    await callback.message.edit_text(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
 
 
 class Exercisig(StatesGroup):
@@ -72,37 +72,49 @@ async def start_session(message: Message, state: FSMContext):
 @router.callback_query(Exercisig.choose_level, text='A1')
 async def start_exercise_A1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    logging.error('In start_exercise_A1() function')
+    global global_level
+    global_level = 'a1'
     await new_exercise(callback, state, 'a1')
 
 
 @router.callback_query(Exercisig.choose_level, text='A2')
 async def start_exercise_A2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
+    global global_level
+    global_level = 'a2'
     await new_exercise(callback, state, 'A2')
 
 
 @router.callback_query(Exercisig.choose_level, text='B1')
 async def start_exercise_B1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
+    global global_level
+    global_level = 'b1'
     await new_exercise(callback, state, 'B1')
 
 
 @router.callback_query(Exercisig.choose_level, text='B2')
 async def start_exercise_B2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
+    global global_level
+    global_level = 'b2'
     await new_exercise(callback, state, 'B2')
 
 
 @router.callback_query(Exercisig.choose_level, text='C1')
 async def start_exercise_C1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
+    global global_level
+    global_level = 'c1'
     await new_exercise(callback, state, 'C1')
 
 
 @router.callback_query(Exercisig.exercise, text='stop')
 async def stop_session(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Exercisig.lobby)
+
+    global_level = None
+
     data = await state.get_data()
     words_num = data.get('words_num')
     rights = data.get('rights')
@@ -119,13 +131,13 @@ async def stop_session(callback: CallbackQuery, state: FSMContext):
     else:
         await callback.message.answer(
             f'''
-            <b>Результаты</b>
+<b>Результаты</b>
 
-            Всего слов: {words_num}
-            Всего правильных ответов: {rights}
-            Всего неправильных ответов: {words_num-rights}
+Всего слов: {words_num}
+Всего правильных ответов: {rights}
+Всего неправильных ответов: {words_num-rights}
 
-            <b>{round((rights*100)/words_num, 1)}% ваших ответов являются правильными!</b>
+<b>{round((rights*100)/words_num, 1)}% ваших ответов являются правильными!</b>
             ''',
             reply_markup=create_kb(start_kb_list))
 
@@ -150,7 +162,7 @@ async def false_answer(callback: CallbackQuery, state: FSMContext):
 
     await callback.answer('❌ Неверно!')
     right_trans = [right[0] for right in word if right[1] == 'true']
-    await callback.message.answer(f'<b>{word[0]} — {right_trans[0]} ❗</b>')
+    await callback.message.answer(f'<b>{word[0][0]} {word[0][1]} — {right_trans[0]} ❗</b>')
     await send_exercise(callback, state)
 
 
