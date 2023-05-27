@@ -23,13 +23,15 @@ import logging
 from config import WORD_TYPES
 from databases.db import connect_db
 
+level = None
 
 async def send_exercise(callback: CallbackQuery, state: FSMContext):
-    word = words[rint(0, 200)]
+    kind = random.choice(WORD_TYPES)
+    word = new_word(kind, rint(0, get_number_of_words(kind)))
     await state.update_data(word=word)
     ikb = InlineKeyboardBuilder().row(InlineKeyboardButton(text=f'{word[1][0]}', callback_data=f'{word[1][1]}'), InlineKeyboardButton(text=f'{word[2][0]}', callback_data=f'{word[2][1]}')).row(InlineKeyboardButton(
         text=f'{word[3][0]}', callback_data=f'{word[3][1]}'), InlineKeyboardButton(text=f'{word[4][0]}', callback_data=f'{word[4][1]}')).row(InlineKeyboardButton(text='Остановить сессию', callback_data='stop'))
-    await callback.message.edit_text(f'<b>{word[0]} — ...</b>', reply_markup=ikb.as_markup())
+    await callback.message.edit_text(f'<b>{word[0][0]} — ...</b>', reply_markup=ikb.as_markup())
 
 
 class Exercisig(StatesGroup):
@@ -72,37 +74,42 @@ async def start_session(message: Message, state: FSMContext):
 @router.callback_query(Exercisig.choose_level, text='A1')
 async def start_exercise_A1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    logging.error('In start_exercise_A1() function')
-    await new_exercise(callback, state, 'a1')
+    level = 'a1'
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='A2')
 async def start_exercise_A2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await new_exercise(callback, state, 'A2')
+    level = 'a2'
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='B1')
 async def start_exercise_B1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await new_exercise(callback, state, 'B1')
+    level = 'b1'
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='B2')
 async def start_exercise_B2(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await new_exercise(callback, state, 'B2')
+    level = 'b2'
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.choose_level, text='C1')
 async def start_exercise_C1(callback: CallbackQuery, state: FSMContext):
     await callback.message.delete()
-    await new_exercise(callback, state, 'C1')
+    level = 'c1'
+    await new_exercise(callback, state)
 
 
 @router.callback_query(Exercisig.exercise, text='stop')
 async def stop_session(callback: CallbackQuery, state: FSMContext):
     await state.set_state(Exercisig.lobby)
+    level = None
     data = await state.get_data()
     words_num = data.get('words_num')
     rights = data.get('rights')
@@ -154,13 +161,13 @@ async def false_answer(callback: CallbackQuery, state: FSMContext):
     await send_exercise(callback, state)
 
 
-async def new_exercise(callback, state, level):
+async def new_exercise(callback, state):
     await state.set_state(Exercisig.exercise)
 
     logging.error('In new_exercise() function 1!')
 
     kind = random.choice(WORD_TYPES)
-    word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
+    word = new_word(kind, rint(0, get_number_of_words(kind)))
 
     await state.update_data(words_num=0, rights=0)
     await state.update_data(word=word)
@@ -171,7 +178,7 @@ async def new_exercise(callback, state, level):
     await callback.message.answer(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
 
 
-def new_word(level, kind, id):
+def new_word(kind, id):
     db_connection = connect_db()
     cursor = db_connection.cursor()
 
@@ -184,9 +191,9 @@ def new_word(level, kind, id):
 
     incorrect_words = []
     for i in range(3):
-        incorrect_word_id = rint(0, get_number_of_words(level, kind))
+        incorrect_word_id = rint(0, get_number_of_words(kind))
         while incorrect_word_id == id:
-            tmp = rint(0, get_number_of_words(level, kind))
+            tmp = rint(0, get_number_of_words(kind))
             print(tmp)
             incorrect_word_id = tmp
         
@@ -229,7 +236,7 @@ def new_word(level, kind, id):
             (str(incorrect_words[2]), word4)] 
 
 
-def get_number_of_words(level, kind):
+def get_number_of_words(kind):
     db_connection = connect_db()
     cursor = db_connection.cursor()
     logging.error('In get_number_of_words() function 1!')
