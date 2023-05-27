@@ -1,2 +1,12 @@
+# Python cache
 __pycache__/
+
+# Production .env
 .env
+
+# VSCode configuration files
+.DS_Store
+.vscode
+
+# Program data
+data/
