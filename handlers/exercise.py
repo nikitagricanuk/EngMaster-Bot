@@ -38,7 +38,7 @@ class Exercisig(StatesGroup):
     choose_level = State()
     exercise = State()
 
-w
+
 router = Router()
 router.message.filter(F.chat.type.in_({'private'}))
 
