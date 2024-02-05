@@ -17,6 +17,8 @@ from words import words
 import random
 from random import randint as rint
 
+from handlers.registration import check_user
+
 # , DATABASE_NAME, DATABASE_USERNAME, DATABASE_PASSWORD, DATABASE_HOST, DATABASE_PORT
 from config import WORD_TYPES
 from databases.db import connect_db
@@ -27,7 +29,7 @@ async def send_exercise(callback: CallbackQuery, state: FSMContext):
     level = data.get('level')
 
     kind = random.choice(WORD_TYPES)
-    word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
+    word = await new_word(level, kind, rint(0, await get_number_of_words(level, kind)))
 
     await state.update_data(word=word)
     await callback.message.edit_text(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
@@ -50,6 +52,7 @@ async def start_cmd(message: Message, state: FSMContext):
         f'Приветствуем тебя, {message.from_user.first_name}!',
         reply_markup=create_kb(start_kb_list)
     )
+    await check_user(message.from_user.id, message.from_user.first_name, message.from_user.last_name)
     await state.set_state(Exercisig.lobby)
 
 
@@ -169,7 +172,7 @@ async def new_exercise(callback, state):
     level = data.get('level')
 
     kind = random.choice(WORD_TYPES)
-    word = new_word(level, kind, rint(0, get_number_of_words(level, kind)))
+    word = await new_word(level, kind, rint(0, await get_number_of_words(level, kind)))
 
     await state.update_data(words_num=0, rights=0)
     await state.update_data(word=word)
@@ -179,14 +182,14 @@ async def new_exercise(callback, state):
     await callback.message.answer(f'<b>{word[0][0]} — ...</b>', reply_markup=create_exercise_kb(word).as_markup())
 
 
-def new_word(level, kind, id):
+async def new_word(level, kind, id):
     db_connection = connect_db()
     cursor = db_connection.cursor()
 
     cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {id}')
     data = cursor.fetchall()
 
-    incorrect_words = get_incorrect_words(level, kind)
+    incorrect_words = await get_incorrect_words(level, kind)
 
     # In this section we determine the word order.
     # Here we're randomly choose in which part of return value
@@ -220,22 +223,20 @@ def new_word(level, kind, id):
     return [(str(data[0][1]), str(data[0][2])), word1[0], word2[0], word3[0], word4[0]] 
 
 
-def get_number_of_words(level, kind):
+async def get_number_of_words(level, kind):
     db_connection = connect_db()
     cursor = db_connection.cursor()
     cursor.execute(f'SELECT * FROM words_{level}_{kind}')
     return cursor.rowcount
 
 
-def get_incorrect_words(level, kind):
+async def get_incorrect_words(level, kind):
     db_connection = connect_db()
     cursor = db_connection.cursor()
 
     incorrect_words = []
     for i in range(3):
-        incorrect_word_id = rint(0, get_number_of_words(level, kind))
-        while incorrect_word_id == id:
-            incorrect_word_id = rint(0, get_number_of_words(level, kind))
+        incorrect_word_id = await get_incorrect_word_id(level, kind, id)
         
         cursor.execute(f'SELECT * FROM words_{level}_{kind} WHERE id = {incorrect_word_id}')
         incorrent_word_translate = cursor.fetchall()
@@ -243,6 +244,13 @@ def get_incorrect_words(level, kind):
         try:
             incorrect_words.append(incorrent_word_translate[0][3])
         except IndexError:
-            incorrect_words = get_incorrect_words(level, kind)
+            incorrect_words = await get_incorrect_words(level, kind)
         
     return incorrect_words
+
+async def get_incorrect_word_id(level, kind, id):
+    incorrect_id = rint(0, await get_number_of_words(level, kind))
+    if incorrect_id == id:
+        incorrect_id = await get_incorrect_word_id(level, kind, id)
+    
+    return incorrect_id

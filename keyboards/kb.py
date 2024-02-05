@@ -12,6 +12,7 @@ def create_kb(kb_list: List) -> ReplyKeyboardMarkup:
 
 start_kb_list = [
     [KeyboardButton(text='Начать!')],
+    [KeyboardButton(text='Мои слова')],
     [KeyboardButton(text='О боте')]
 ]
 
